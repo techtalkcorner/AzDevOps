@@ -1,0 +1,34 @@
+trigger:
+  branches:
+    include:
+    - Publish
+stages:
+- stage: __default
+  jobs:
+  - job: Job
+    pool:
+      vmImage: 'windows-latest'
+    steps:
+    - task: MSBuild@1
+      displayName: 'Build Visual Studio solution'
+      inputs:
+        solution: '**/*.sln'
+        msbuildArchitecture: 'x64'
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish DACPAC file'
+      inputs:
+        PathtoPublish: '$(Build.SourcesDirectory)\Adventure Works Data Warehouse\bin\Debug'
+        ArtifactName: 'DACPACs'
+        publishLocation: 'Container'
+    - task: SqlAzureDacpacDeployment@1
+      displayName: 'Deploy DACPAC changes'
+      inputs:
+        azureSubscription: 'AzureDevOps'
+        AuthenticationType: 'servicePrincipal'
+        ServerName: 'syn-dw-aue-prd.sql.azuresynapse.net'
+        DatabaseName: 'DataWarehouse'
+        deployType: 'DacpacTask'
+        DeploymentAction: 'Publish'
+        DacpacFile: '$(Build.SourcesDirectory)\Adventure Works Data Warehouse\bin\Debug\Adventure Works Data Warehouse.dacpac'
+        IpDetectionMethod: 'AutoDetect'
+
